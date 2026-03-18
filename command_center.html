@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masterful Capital — Command Center</title>
+<style>
+  :root {
+    --bg: #0d0d14; --surface: #12121e; --surface2: #1a1a2e;
+    --gold: #C59A27; --gold2: #e8b84b; --white: #f0f0f5;
+    --gray: #8888aa; --green: #3ecf8e; --red: #f05454;
+    --blue: #4a9eff; --purple: #9b74f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--white); font-family: 'SF Pro Text', -apple-system, sans-serif; font-size: 13px; }
+  
+  .header { background: var(--surface2); border-bottom: 1px solid #2a2a40; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: var(--gold); }
+  .regime-chip { background: #1e2035; border: 1px solid #3a3a5a; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--gray); }
+  .ts { color: var(--gray); font-size: 11px; }
+  
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #1a1a2e; padding: 1px; }
+  .kpi { background: var(--surface); padding: 20px; }
+  .kpi-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--gray); margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--gray); margin-top: 6px; }
+  .gold { color: var(--gold2); }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .text-red { color: var(--red); }
+  .blue { color: var(--blue); }
+  .dim { color: var(--gray); }
+  
+  .main { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #1a1a2e; }
+  .panel { background: var(--surface); padding: 20px; }
+  .panel-wide { grid-column: span 2; }
+  .panel-full { grid-column: span 3; }
+  .panel-title { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; border-bottom: 1px solid #2a2a3a; padding-bottom: 8px; }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--gray); padding: 6px 8px; text-align: left; border-bottom: 1px solid #2a2a3a; }
+  td { padding: 8px 8px; border-bottom: 1px solid #1e1e2e; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1a1a2e; }
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+  
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 600; display: inline-block; }
+  .badge-live { background: rgba(62,207,142,0.15); color: var(--green); }
+  .badge-pending { background: rgba(196,154,39,0.15); color: var(--gold); }
+  .badge-killed { background: rgba(240,84,84,0.15); color: var(--red); }
+  .badge-bull { background: rgba(62,207,142,0.15); color: var(--green); }
+  .badge-bear { background: rgba(240,84,84,0.15); color: var(--red); }
+  .badge-high { background: rgba(155,116,247,0.15); color: var(--purple); }
+  .badge-med { background: rgba(74,158,255,0.15); color: var(--blue); }
+  
+  .gate-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .gate { background: var(--surface2); padding: 10px; border-radius: 4px; text-align: center; }
+  .gate-name { font-size: 10px; color: var(--gray); margin-bottom: 4px; }
+  .gate-value { font-size: 12px; font-weight: 700; }
+  .gate-pass { color: var(--green); }
+  .gate-warn { color: var(--gold); }
+  .gate-fail { color: var(--red); }
+  
+  .source-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e1e2e; }
+  .source-row:last-child { border-bottom: none; }
+  .source-name { font-size: 12px; font-weight: 500; }
+  .source-detail { font-size: 11px; color: var(--gray); }
+  .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; box-shadow: 0 0 6px var(--green); }
+  .dot-pending { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); display: inline-block; margin-right: 6px; }
+  .dot-dead { width: 7px; height: 7px; border-radius: 50%; background: var(--gray); display: inline-block; margin-right: 6px; }
+  
+  .alloc-bar { background: #1e1e2e; border-radius: 2px; height: 6px; margin-top: 4px; }
+  .alloc-fill { height: 6px; border-radius: 2px; background: var(--gold); }
+  
+  .ticker-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .ticker-chip { background: #1e1e2e; border: 1px solid #2a2a40; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-family: monospace; }
+  .ticker-chip.red { border-color: rgba(240,84,84,0.3); color: var(--red); }
+  .ticker-chip.green { border-color: rgba(62,207,142,0.3); color: var(--green); }
+  
+  .rule { padding: 10px 12px; border-left: 3px solid var(--gold); background: rgba(197,154,39,0.05); margin-bottom: 8px; font-size: 12px; }
+  .rule-num { color: var(--gold); font-weight: 700; margin-right: 8px; }
+  
+  .section-divider { background: #1a1a2e; padding: 8px 24px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gray); border-top: 1px solid #2a2a3a; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">MASTERFUL <span>CAPITAL</span></div>
+    <div class="regime-chip">⬡ REGIME: NEUTRAL</div>
+    <div class="regime-chip">📡 BTC 30d +7.2% ✅ | 90d -13.6% ❌</div>
+  </div>
+  <div class="ts">Isaac · Mac #1 · 2026-03-18 09:30 ET</div>
+</div>
+
+<!-- KPI ROW -->
+<div class="grid">
+  <div class="kpi">
+    <div class="kpi-label">Portfolio NAV</div>
+    <div class="kpi-value gold">(paper)</div>
+    <div class="kpi-sub">Peak (paper peak) · DD </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">ORACLE P&amp;L</div>
+    <div class="kpi-value green">$4,210</div>
+    <div class="kpi-sub">8 open · $11,893 deployed / $15,000 max</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">ORACLE Win Rate</div>
+    <div class="kpi-value gold">76%</div>
+    <div class="kpi-sub">29 resolved · 0 wins</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Strategies Live</div>
+    <div class="kpi-value blue">3</div>
+    <div class="kpi-sub">MERIDIAN · ONEIL · PEAD · +2 pending</div>
+  </div>
+</div>
+
+<div class="section-divider">Portfolio &amp; Strategies</div>
+
+<div class="main">
+  <!-- STRATEGY TABLE -->
+  <div class="panel panel-wide">
+    <div class="panel-title">Strategy Portfolio — v10.1</div>
+    <table>
+      <tr><th>Strategy</th><th>Alloc</th><th>CAGR</th><th>Sharpe</th><th>Max DD</th><th>Calmar</th><th>BTC Corr</th><th>Status</th></tr>
+      <tr>
+        <td><b>MERIDIAN v1</b></td>
+        <td><div class="mono">75%</div><div class="alloc-bar"><div class="alloc-fill" style="width:75%"></div></div></td>
+        <td class="mono gold">43.1%</td><td class="mono">1.186</td>
+        <td class="mono">-16.6%</td><td class="mono">0.80</td>
+        <td class="mono">0.505</td>
+        <td><span class="badge badge-live">LIVE</span></td>
+      </tr>
+      <tr>
+        <td><b>ONEIL L/S v4b</b></td>
+        <td><div class="mono">15%</div><div class="alloc-bar"><div class="alloc-fill" style="width:15%"></div></div></td>
+        <td class="mono gold">17.3%</td><td class="mono">1.118</td>
+        <td class="mono">-14.4%</td><td class="mono">1.20</td>
+        <td class="mono green">0.177</td>
+        <td><span class="badge badge-live">LIVE</span></td>
+      </tr>
+      <tr>
+        <td><b>PEAD Real EPS</b></td>
+        <td><div class="mono">5%</div><div class="alloc-bar"><div class="alloc-fill" style="width:5%"></div></div></td>
+        <td class="mono dim">event</td><td class="mono">—</td>
+        <td class="mono">—</td><td class="mono">—</td>
+        <td class="mono green">0.005</td>
+        <td><span class="badge badge-live">LIVE</span></td>
+      </tr>
+      <tr>
+        <td><b>MERIDIAN v2 (VX)</b></td>
+        <td><div class="mono dim">—</div></td>
+        <td class="mono">10.2%</td><td class="mono">1.096</td>
+        <td class="mono">-13.5%</td><td class="mono">0.755</td>
+        <td class="mono dim">—</td>
+        <td><span class="badge badge-pending">DESTROYER</span></td>
+      </tr>
+      <tr>
+        <td><b>INDEX_ARB</b></td>
+        <td><div class="mono">5%</div><div class="alloc-bar"><div class="alloc-fill" style="width:5%"></div></div></td>
+        <td class="mono dim">n=46</td><td class="mono">—</td>
+        <td class="mono">—</td><td class="mono">—</td>
+        <td class="mono dim">—</td>
+        <td><span class="badge badge-pending">PENDING</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ORACLE OPEN POSITIONS -->
+  <div class="panel">
+    <div class="panel-title">ORACLE — Open Positions (8)</div>
+    <table>
+      <tr><th>Market</th><th>Dir</th><th>Size</th><th>Edge</th><th>Prob</th><th>Cat</th></tr>
+      <tr>
+      <td class="mono">CPI</td>
+      <td><span class="badge badge-bear">BUY NO</span></td>
+      <td class="mono">$2,000</td>
+      <td class="mono gold">28.9pts</td>
+      <td class="mono">11%</td>
+      <td class="dim">econ</td>
+    </tr><tr>
+      <td class="mono">GDP</td>
+      <td><span class="badge badge-bull">BUY YES</span></td>
+      <td class="mono">$2,000</td>
+      <td class="mono gold">21.0pts</td>
+      <td class="mono">92%</td>
+      <td class="dim">econ</td>
+    </tr><tr>
+      <td class="mono">FED</td>
+      <td><span class="badge badge-bull">BUY YES</span></td>
+      <td class="mono">$1,500</td>
+      <td class="mono gold">26.0pts</td>
+      <td class="mono">100%</td>
+      <td class="dim">fed</td>
+    </tr><tr>
+      <td class="mono">CPI</td>
+      <td><span class="badge badge-bear">BUY NO</span></td>
+      <td class="mono">$2,000</td>
+      <td class="mono gold">28.6pts</td>
+      <td class="mono">2%</td>
+      <td class="dim">econ</td>
+    </tr><tr>
+      <td class="mono">FED</td>
+      <td><span class="badge badge-bear">BUY NO</span></td>
+      <td class="mono">$363</td>
+      <td class="mono gold">9.4pts</td>
+      <td class="mono">88%</td>
+      <td class="dim">fed</td>
+    </tr><tr>
+      <td class="mono">FED</td>
+      <td><span class="badge badge-bear">BUY NO</span></td>
+      <td class="mono">$1,280</td>
+      <td class="mono gold">28.5pts</td>
+      <td class="mono">55%</td>
+      <td class="dim">fed</td>
+    </tr><tr>
+      <td class="mono">GDP</td>
+      <td><span class="badge badge-bear">BUY NO</span></td>
+      <td class="mono">$2,000</td>
+      <td class="mono gold">22.5pts</td>
+      <td class="mono">13%</td>
+      <td class="dim">econ</td>
+    </tr><tr>
+      <td class="mono">FED</td>
+      <td><span class="badge badge-bull">BUY YES</span></td>
+      <td class="mono">$750</td>
+      <td class="mono gold">56.0pts</td>
+      <td class="mono">70%</td>
+      <td class="dim">fed</td>
+    </tr>
+    </table>
+    <div style="margin-top:12px; font-size:11px; color:var(--gray)">
+      Crypto: NEUTRAL_SKIP &nbsp;|&nbsp; Fed: ACTIVE &nbsp;|&nbsp; Econ: ACTIVE
+    </div>
+  </div>
+</div>
+
+<div class="section-divider">Factory &amp; Destroyer Queue</div>
+<div class="main">
+
+  <!-- DESTROYER GATES -->
+  <div class="panel">
+    <div class="panel-title">Destroyer Protocol — 10 Gates (v7.1)</div>
+    <div class="gate-grid">
+      <div class="gate"><div class="gate-name">G0</div><div class="gate-value gate-pass">Look-Ahead</div><div style="font-size:9px;color:var(--gray)">&lt;5pp delta</div></div>
+      <div class="gate"><div class="gate-name">G1</div><div class="gate-value gate-pass">Walk-Fwd</div><div style="font-size:9px;color:var(--gray)">All +</div></div>
+      <div class="gate"><div class="gate-name">G2</div><div class="gate-value gate-pass">Param Stab</div><div style="font-size:9px;color:var(--gray)">&lt;30pp</div></div>
+      <div class="gate"><div class="gate-name">G3</div><div class="gate-value gate-warn">Bootstrap</div><div style="font-size:9px;color:var(--gray)">CI95&gt;0 soft</div></div>
+      <div class="gate"><div class="gate-name">G4</div><div class="gate-value gate-pass">Regime</div><div style="font-size:9px;color:var(--gray)">H2/H1&gt;0.5</div></div>
+      <div class="gate"><div class="gate-name">G5</div><div class="gate-value gate-pass">TC Cost</div><div style="font-size:9px;color:var(--gray)">Sharpe&gt;0.4</div></div>
+      <div class="gate"><div class="gate-name">G6</div><div class="gate-value gate-pass">Corr</div><div style="font-size:9px;color:var(--gray)">BTC&lt;0.30</div></div>
+      <div class="gate"><div class="gate-name">G7</div><div class="gate-value gate-pass">Sharpe</div><div style="font-size:9px;color:var(--gray)">&gt;0.40</div></div>
+      <div class="gate"><div class="gate-name">G8</div><div class="gate-value gate-pass">Calmar</div><div style="font-size:9px;color:var(--gray)">&gt;0.50</div></div>
+      <div class="gate"><div class="gate-name">G9</div><div class="gate-value gate-pass">Payoff</div><div style="font-size:9px;color:var(--gray)">&gt;1.50</div></div>
+    </div>
+    <div style="margin-top:14px; font-size:11px; color:var(--gray); line-height:1.8">
+      Run order: G0→G1→G9 first (kills 60%)<br>
+      ETF rotation → auto-fail G9, skip entirely<br>
+      Dual-verify: Isaac + Vision both required<br>
+      Overestimation: mean 11.5pp factory inflation (fixed)
+    </div>
+  </div>
+
+  <!-- FACTORY QUEUE -->
+  <div class="panel">
+    <div class="panel-title">Honest Survivor Queue — 23 Candidates</div>
+    <table>
+      <tr><th>#</th><th>Strategy</th><th>CAGR</th><th>Sharpe</th><th>Max DD</th><th>Pri</th></tr>
+      <tr>
+      <td class="mono dim">#1</td>
+      <td style="font-size:11px">vol_realized_63d_vix_regime_vol_ratio</td>
+      <td class="mono gold">16.3%</td>
+      <td class="mono">1.4</td>
+      <td class="mono ">-11.7%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#2</td>
+      <td style="font-size:11px">fed_rate_change_reversal_21d_momentum_21d</td>
+      <td class="mono gold">13.6%</td>
+      <td class="mono">1.26</td>
+      <td class="mono ">-15.2%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#3</td>
+      <td style="font-size:11px">yield_curve_fed_rate_change</td>
+      <td class="mono gold">13.6%</td>
+      <td class="mono">1.26</td>
+      <td class="mono ">-15.2%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#4</td>
+      <td style="font-size:11px">vix_regime_fed_rate_change_bollinger_20</td>
+      <td class="mono gold">17.8%</td>
+      <td class="mono">1.25</td>
+      <td class="mono ">-18.4%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#5</td>
+      <td style="font-size:11px">yield_curve_vix_regime</td>
+      <td class="mono gold">13.7%</td>
+      <td class="mono">1.21</td>
+      <td class="mono ">-15.1%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#6</td>
+      <td style="font-size:11px">reversal_5d</td>
+      <td class="mono gold">13.2%</td>
+      <td class="mono">1.2</td>
+      <td class="mono ">-16.4%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#7</td>
+      <td style="font-size:11px">yield_curve_vix_regime_reversal_5d</td>
+      <td class="mono gold">13.2%</td>
+      <td class="mono">1.2</td>
+      <td class="mono ">-16.4%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#8</td>
+      <td style="font-size:11px">dxy_momentum_reversal_5d_yield_curve</td>
+      <td class="mono gold">13.2%</td>
+      <td class="mono">1.2</td>
+      <td class="mono ">-16.4%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#9</td>
+      <td style="font-size:11px">reversal_5d_dxy_momentum_fed_rate_change</td>
+      <td class="mono gold">13.2%</td>
+      <td class="mono">1.2</td>
+      <td class="mono ">-16.4%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr><tr>
+      <td class="mono dim">#10</td>
+      <td style="font-size:11px">momentum_42d_momentum_21d_vol_realized_21d</td>
+      <td class="mono gold">15.5%</td>
+      <td class="mono">1.19</td>
+      <td class="mono text-red">-21.5%</td>
+      <td><span class="badge badge-high">HIGH</span></td>
+    </tr>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--gray)">Honest = full-period metrics after overestimation fix. Top 2 killed (G8/G9 fail).</div>
+  </div>
+
+  <!-- FACTOR ATTRIBUTION -->
+  <div class="panel">
+    <div class="panel-title">Fama-French 6-Factor Attribution</div>
+    <table>
+      <tr><th>Strategy</th><th>FF R²</th><th>Alpha/yr</th><th>T-stat</th><th>p-val</th></tr>
+      <tr><td>MERIDIAN v1</td><td class="mono">0.505</td><td class="mono gold">+2.96%</td><td class="mono">2.1</td><td class="mono green">&lt;0.05</td></tr>
+      <tr><td>ONEIL L/S v4b</td><td class="mono green">0.001</td><td class="mono gold">+21.60%</td><td class="mono">4.71</td><td class="mono green">&lt;0.0001</td></tr>
+      <tr><td>PEAD Real EPS</td><td class="mono green">0.005</td><td class="mono gold">+55.73%</td><td class="mono">4.80</td><td class="mono green">&lt;0.0001</td></tr>
+    </table>
+    <div style="margin-top:12px; font-size:11px; color:var(--gray)">
+      ONEIL R²=0.001 = zero factor model explanatory power<br>
+      All three PSR=1.0000 vs 14,280 strategy multiple testing<br>
+      FF data: data_cache/ff_factors_daily.csv (2000–2026)
+    </div>
+  </div>
+</div>
+
+<div class="section-divider">Alternative Data Infrastructure</div>
+<div class="main">
+
+  <!-- DATA SOURCES -->
+  <div class="panel">
+    <div class="panel-title">Alt Data Scanners — All Free</div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">EDGAR XBRL Anomaly</span><br><span class="source-detail">Beneish M-Score + Altman Z · 200 stocks daily</span></div>
+      <div style="text-align:right"><div class="mono red">11 fraud flags</div><div class="mono dim">56 distress</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">Form 4 Cluster Signal</span><br><span class="source-detail">3+ insiders same stock / 10d window · EDGAR</span></div>
+      <div style="text-align:right"><div class="mono dim">2,624 filings/wk</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">Govt Contract Signal</span><br><span class="source-detail">USASpending.gov · award → ticker · daily</span></div>
+      <div style="text-align:right"><div class="mono gold">$65B this wk</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">Unusual Options Scanner</span><br><span class="source-detail">Vol/OI &gt;10x · OTM calls · Polygon Pro</span></div>
+      <div style="text-align:right"><div class="mono dim">daily</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">SEC Comment Letters</span><br><span class="source-detail">CORRESP filings · 6,221 in DB · accounting risk</span></div>
+      <div style="text-align:right"><div class="mono dim">40 (90d)</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">FDA Enforcement + Approval</span><br><span class="source-detail">openFDA API · recalls + NDA approvals</span></div>
+      <div style="text-align:right"><div class="mono red">20 recalls</div><div class="mono green">5 approved</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">ADS-B CEO Jet Tracker</span><br><span class="source-detail">OpenSky · 5,050 US aircraft · M&amp;A hubs</span></div>
+      <div style="text-align:right"><div class="mono dim">every 4h</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">Patent Trend Signal</span><br><span class="source-detail">USPTO PatentsView · R&amp;D velocity · weekly</span></div>
+      <div style="text-align:right"><div class="mono dim">weekly</div></div>
+    </div>
+    <div class="source-row">
+      <div><span class="dot-live"></span><span class="source-name">Marine / BDI Signal</span><br><span class="source-detail">Port congestion → sector rotation</span></div>
+      <div style="text-align:right"><div class="mono dim">daily</div></div>
+    </div>
+  </div>
+
+  <!-- XBRL ALERTS -->
+  <div class="panel">
+    <div class="panel-title">Live XBRL Signals — Today</div>
+    <div style="margin-bottom:14px">
+      <div class="kpi-label">Fraud Risk (Beneish M &gt; -1.78) — AUTO SHORT</div>
+      <div class="ticker-list">
+        <div class="ticker-chip red">AAOI</div><div class="ticker-chip red">ABEO</div><div class="ticker-chip red">ABM</div><div class="ticker-chip red">ABTC</div><div class="ticker-chip red">ACCO</div><div class="ticker-chip red">ACM</div><div class="ticker-chip red">ACMR</div><div class="ticker-chip red">ACN</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="kpi-label">High Quality (Z &gt; 3.0, M &lt; -2.5) — LONG BIAS</div>
+      <div class="ticker-list">
+        <div class="ticker-chip green">ABG</div><div class="ticker-chip green">ADBE</div>
+      </div>
+    </div>
+    <div>
+      <div class="kpi-label">Distress Zone (Z &lt; 1.81) — 56 flags</div>
+      <div style="font-size:11px; color:var(--gray)">Available in xbrl_anomalies.json. Cross-reference with ONEIL short leg before position sizing.</div>
+    </div>
+    <div style="margin-top:16px; padding:10px; background:#1a1a2e; border-radius:4px; font-size:11px; color:var(--gray)">
+      Budget: $0/mo now · $168/mo Month 1 recommendation<br>
+      (FlightAware $79 + MarineTraffic $49 + PACER $30 + Tiingo $10)<br>
+      Add Second Measure ($500/mo) at $10M AUM
+    </div>
+  </div>
+
+  <!-- CARDINAL RULES -->
+  <div class="panel">
+    <div class="panel-title">Cardinal Rules &amp; Constraints</div>
+    <div class="rule"><span class="rule-num">R1</span>No number is real unless from EventDrivenBacktester</div>
+    <div class="rule"><span class="rule-num">R2</span>No strategy exists unless code is in git with verified hash</div>
+    <div class="rule"><span class="rule-num">R3</span>No leverage until N_eff &gt; 4.0, no strategy &gt; 25% CAGR</div>
+    <div class="rule"><span class="rule-num">R4</span>When two engines disagree, trust neither</div>
+    <div class="rule"><span class="rule-num">R5</span>Destroyer runs on everything. Both Isaac + Vision required</div>
+    <div class="rule"><span class="rule-num">R6</span>When results improve dramatically, assume error first</div>
+    <div class="rule"><span class="rule-num">R7</span>Factory over strategy. Improve the machine, not just strategies</div>
+    <div class="rule"><span class="rule-num">R8</span>API keys in environment variables only. Never in git</div>
+    <div style="margin-top:14px; font-size:11px; color:var(--gray)">
+      <b class="gold">Tier 0 (CURRENT):</b> 1x paper only<br>
+      <b>Tier 1 (1.5x):</b> 6+ strategies, N_eff&gt;4.0, 90d Sharpe&gt;0.80<br>
+      <b>Tier 2 (2.0x):</b> 8+ strategies, N_eff&gt;5.0, 60d live at 1.5x
+    </div>
+  </div>
+</div>
+
+<div class="section-divider">Infrastructure &amp; Data Sources</div>
+<div class="main">
+  <div class="panel panel-full">
+    <div class="panel-title">Full Data Source Registry</div>
+    <table>
+      <tr><th>Source</th><th>Type</th><th>Coverage</th><th>Cost</th><th>Status</th><th>Key Signal</th></tr>
+      <tr><td>Polygon.io Pro</td><td>Equities / Options / FX</td><td>All US stocks, options 2016+</td><td>Owned</td><td><span class="badge badge-live">LIVE</span></td><td>ONEIL universe, unusual options</td></tr>
+      <tr><td>FRED</td><td>Macro / Rates</td><td>1950s–present</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Fed rate changes, ORACLE econ</td></tr>
+      <tr><td>Kalshi API</td><td>Prediction Markets</td><td>Crypto, Fed, Econ contracts</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>ORACLE execution platform</td></tr>
+      <tr><td>SEC EDGAR XBRL</td><td>Financial Statements</td><td>8,000+ reporting companies</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Beneish fraud, Altman distress</td></tr>
+      <tr><td>SEC EDGAR Form 4</td><td>Insider Transactions</td><td>All insider filings</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Cluster buying signal</td></tr>
+      <tr><td>USASpending.gov</td><td>Govt Contracts</td><td>All federal awards</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Revenue surprise 6-12mo</td></tr>
+      <tr><td>openFDA API</td><td>Drug Enforcement / Approvals</td><td>All FDA actions</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Pharma short/long</td></tr>
+      <tr><td>OpenSky Network</td><td>ADS-B Aircraft Tracking</td><td>US airspace real-time</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>CEO jet → M&amp;A signal</td></tr>
+      <tr><td>USPTO PatentsView</td><td>Patent Filings</td><td>All US patents</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>R&amp;D velocity → revenue</td></tr>
+      <tr><td>Fama-French CRSP</td><td>Factor Returns</td><td>6 factors daily 2000–2026</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>Factor attribution, R²</td></tr>
+      <tr><td>yfinance</td><td>Crypto / Index Only</td><td>BTC, ETH, SOL, ^VIX, ^VIX3M</td><td>Free</td><td><span class="badge badge-live">LIVE</span></td><td>MERIDIAN regime, VX signal</td></tr>
+      <tr><td>Quiver Quantitative</td><td>Congressional Trades</td><td>45-day delay, free tier</td><td>Free</td><td><span class="badge badge-pending">SIGNAL KILLED</span></td><td>Congress buys — no edge found</td></tr>
+      <tr><td>FlightAware AeroAPI</td><td>Private Aviation</td><td>99%+ private jet coverage</td><td>$79/mo</td><td><span class="badge badge-pending">RECOMMENDED</span></td><td>Corporate jet M&amp;A signal upgrade</td></tr>
+      <tr><td>MarineTraffic Standard</td><td>Vessel AIS Positioning</td><td>Global real-time ships</td><td>$49/mo</td><td><span class="badge badge-pending">RECOMMENDED</span></td><td>Port congestion → sector rotation</td></tr>
+      <tr><td>Second Measure</td><td>Credit Card Transactions</td><td>Consumer spending by company</td><td>$500/mo</td><td><span class="badge badge-killed">HOLD — $10M AUM</span></td><td>Earnings surprise 4-6wk early</td></tr>
+      <tr><td>Glassnode Advanced</td><td>On-Chain Crypto</td><td>BTC/ETH MVRV, SOPR, flows</td><td>$29/mo</td><td><span class="badge badge-pending">KEY PENDING</span></td><td>MERIDIAN regime enhancement</td></tr>
+    </table>
+  </div>
+</div>
+
+<div style="background:var(--surface2);padding:12px 24px;text-align:center;font-size:11px;color:var(--gray);border-top:1px solid #2a2a3a">
+  Masterful Capital · Backtested Strategies Since 2026-03-03 · Target: $6M → $100M (4yr) · Fundraise: March 2028 · All data from EventDrivenBacktester v2.0
+</div>
+
+</body></html>
