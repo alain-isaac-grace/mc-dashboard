@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARMIS — Adaptive Real-time Multi-domain Intelligence System</title>
+<style>
+:root{--bg:#050810;--surface:#0c1220;--surface2:#111a2e;--border:rgba(79,143,255,0.12);--accent:#4f8fff;--accent2:#e94560;--green:#4caf50;--orange:#ff9800;--red:#e94560;--purple:#9c27b0;--cyan:#00bcd4;--text:#e8eaf6;--dim:rgba(232,234,246,0.5);--muted:rgba(232,234,246,0.3);--font:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;--mono:'SF Mono','JetBrains Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+::selection{background:var(--accent);color:#fff}
+
+/* Header */
+.header{background:linear-gradient(180deg,rgba(79,143,255,0.08) 0%,transparent 100%);border-bottom:1px solid var(--border);padding:3rem 2rem 2rem;text-align:center;position:relative}
+.header::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(79,143,255,0.1),transparent 70%);pointer-events:none}
+.logo{font-size:3rem;font-weight:800;letter-spacing:8px;background:linear-gradient(135deg,#4f8fff,#e94560);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--dim);margin:0.5rem 0 2rem;font-size:1rem;font-weight:300}
+
+/* Stats row */
+.stats{display:flex;justify-content:center;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;max-width:900px;margin:0 auto 2rem}
+.stat{flex:1;background:var(--surface);padding:1.5rem 1rem;text-align:center;transition:background 0.3s}
+.stat:hover{background:var(--surface2)}
+.stat-val{font-family:var(--mono);font-size:1.8rem;font-weight:700;color:#fff}
+.stat-val.accent{color:var(--accent)}
+.stat-val.red{color:var(--accent2)}
+.stat-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-top:6px}
+
+/* Engine pills */
+.engines{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:1.5rem auto;max-width:800px}
+.engine{background:rgba(79,143,255,0.08);border:1px solid rgba(79,143,255,0.2);padding:4px 12px;border-radius:20px;font-size:0.7rem;color:var(--accent);font-weight:500;transition:all 0.3s}
+.engine:hover{background:rgba(79,143,255,0.15);border-color:var(--accent)}
+
+/* Tabs */
+.tabs{display:flex;justify-content:center;gap:0;border-bottom:1px solid var(--border);margin:0 2rem}
+.tab{padding:1rem 2rem;cursor:pointer;font-size:0.8rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.3s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Content */
+.container{max-width:1200px;margin:0 auto;padding:2rem}
+.panel{display:none}.panel.active{display:block}
+
+/* Prediction cards */
+.pred-grid{display:grid;gap:12px}
+.pred{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:all 0.3s;cursor:default}
+.pred:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 8px 32px rgba(79,143,255,0.08)}
+.pred-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.pred-q{font-size:1rem;color:#fff;flex:1;line-height:1.4}
+.pred-prob{font-family:var(--mono);font-size:2rem;font-weight:800;min-width:80px;text-align:right}
+.pred-prob.high{color:var(--green)}.pred-prob.mid{color:var(--orange)}.pred-prob.low{color:var(--red)}
+.pred-bar{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;position:relative;margin:0.8rem 0}
+.pred-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.pred-bar-ci{position:absolute;top:0;height:100%;background:rgba(255,255,255,0.08);border-radius:3px}
+.pred-meta{display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.78rem;color:var(--dim)}
+.pred-meta span{color:var(--text)}
+.domain{display:inline-block;padding:3px 10px;border-radius:4px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-right:8px}
+.domain-economy{background:rgba(33,150,243,0.15);color:#2196f3}
+.domain-market{background:rgba(76,175,80,0.15);color:#4caf50}
+.domain-commodity{background:rgba(255,152,0,0.15);color:#ff9800}
+.domain-geopolitical{background:rgba(233,69,96,0.15);color:#e94560}
+.domain-disaster{background:rgba(156,39,176,0.15);color:#9c27b0}
+.domain-climate{background:rgba(0,188,212,0.15);color:#00bcd4}
+
+/* Causal graph */
+.causal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.causal-edge{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;display:flex;align-items:center;gap:1rem}
+.causal-arrow{font-family:var(--mono);color:var(--accent);font-size:0.9rem;white-space:nowrap}
+.causal-str{font-family:var(--mono);font-size:0.8rem;padding:3px 8px;border-radius:4px}
+.str-high{background:rgba(76,175,80,0.15);color:#4caf50}
+.str-med{background:rgba(255,152,0,0.15);color:#ff9800}
+
+/* Architecture */
+.arch{max-width:800px;margin:2rem auto;font-family:var(--mono);font-size:0.85rem;line-height:2;color:var(--dim);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;white-space:pre-wrap}
+.arch .hl{color:var(--accent);font-weight:600}
+.arch .hl2{color:var(--accent2);font-weight:600}
+
+/* Footer */
+.footer{text-align:center;padding:3rem;color:var(--muted);font-size:0.75rem;border-top:1px solid var(--border)}
+
+/* Connectors */
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.conn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.8rem 1rem;font-size:0.82rem}
+.conn-name{color:#fff;font-weight:600}.conn-desc{color:var(--dim);font-size:0.75rem;margin-top:2px}
+.conn-status{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px}
+.conn-status.live{background:var(--green)}.conn-status.stub{background:var(--orange)}
+
+@media(max-width:768px){.stats{flex-direction:column}.pred-top{flex-direction:column}.tabs{overflow-x:auto}.container{padding:1rem}}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="logo">ARMIS</div>
+<div class="tagline">Adaptive Real-time Multi-domain Intelligence System</div>
+
+<div class="stats">
+<div class="stat"><div class="stat-val accent">20</div><div class="stat-label">Live Predictions</div></div>
+<div class="stat"><div class="stat-val accent">12</div><div class="stat-label">Fused Engines</div></div>
+<div class="stat"><div class="stat-val accent">50+</div><div class="stat-label">Data Connectors</div></div>
+<div class="stat"><div class="stat-val">84.4%</div><div class="stat-label">QC Accuracy</div></div>
+<div class="stat"><div class="stat-val red">BEAR</div><div class="stat-label">Market Regime</div></div>
+<div class="stat"><div class="stat-val accent">86</div><div class="stat-label">Causal Links</div></div>
+</div>
+
+<div class="engines">
+<div class="engine">⚛️ Quantum Probability</div>
+<div class="engine">🔗 Causal Discovery</div>
+<div class="engine">📏 Conformal Prediction</div>
+<div class="engine">🧮 Tensor Fusion</div>
+<div class="engine">🧠 Active Inference</div>
+<div class="engine">🌲 XGBoost</div>
+<div class="engine">💡 LightGBM</div>
+<div class="engine">🐱 CatBoost</div>
+<div class="engine">📈 Hurst Regime</div>
+<div class="engine">🐝 Swarm Consensus</div>
+<div class="engine">📰 News NLP</div>
+<div class="engine">📐 Adaptive CI</div>
+</div>
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="showPanel('predictions')">Predictions</div>
+<div class="tab" onclick="showPanel('causal')">Causal Graph</div>
+<div class="tab" onclick="showPanel('architecture')">Architecture</div>
+<div class="tab" onclick="showPanel('connectors')">Data Sources</div>
+</div>
+
+<div class="container">
+
+<!-- PREDICTIONS PANEL -->
+<div class="panel active" id="panel-predictions">
+<div class="pred-grid">
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-disaster">disaster</span>Will a magnitude 7.0+ earthquake hit Pacific Ring of Fire in 90 days?</div>
+<div class="pred-prob mid">52%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:9%;width:87%"></div>
+<div class="pred-bar-fill" style="width:52%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[9% – 96%]</span> &middot;
+Agreement: <span>84%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-06-25</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-geopolitical">geopolitical</span>Will any FDIC-insured bank fail in Q2 2026?</div>
+<div class="pred-prob mid">45%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:6%;width:78%"></div>
+<div class="pred-bar-fill" style="width:45%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[6% – 84%]</span> &middot;
+Agreement: <span>93%</span> &middot;
+Action: <span>INCREASE</span> &middot;
+Deadline: <span>2026-06-30</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-geopolitical">geopolitical</span>Will there be a new US tariff action affecting >$50B in next 60 days?</div>
+<div class="pred-prob mid">54%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:13%;width:81%"></div>
+<div class="pred-bar-fill" style="width:54%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[13% – 94%]</span> &middot;
+Agreement: <span>93%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-05-25</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-commodity">commodity</span>Will gold exceed $3,200/oz before July 2026?</div>
+<div class="pred-prob mid">53%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:9%;width:88%"></div>
+<div class="pred-bar-fill" style="width:53%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[9% – 97%]</span> &middot;
+Agreement: <span>83%</span> &middot;
+Action: <span>INCREASE</span> &middot;
+Deadline: <span>2026-07-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-commodity">commodity</span>Will WTI crude oil exceed $80/barrel before August 2026?</div>
+<div class="pred-prob mid">50%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:7%;width:86%"></div>
+<div class="pred-bar-fill" style="width:50%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[7% – 93%]</span> &middot;
+Agreement: <span>95%</span> &middot;
+Action: <span>INCREASE</span> &middot;
+Deadline: <span>2026-08-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will VIX average above 22 for the month of April 2026?</div>
+<div class="pred-prob high">67%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:22%;width:75%"></div>
+<div class="pred-bar-fill" style="width:67%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[22% – 97%]</span> &middot;
+Agreement: <span>76%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-04-30</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will QQQ outperform IWM over next 90 days?</div>
+<div class="pred-prob mid">47%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:4%;width:87%"></div>
+<div class="pred-bar-fill" style="width:47%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[4% – 91%]</span> &middot;
+Agreement: <span>89%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-06-25</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will BTC exceed $100,000 before October 2026?</div>
+<div class="pred-prob mid">55%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:13%;width:84%"></div>
+<div class="pred-bar-fill" style="width:55%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[13% – 97%]</span> &middot;
+Agreement: <span>89%</span> &middot;
+Action: <span>INCREASE</span> &middot;
+Deadline: <span>2026-10-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will SPY close above $600 on April 30, 2026?</div>
+<div class="pred-prob high">75%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:29%;width:68%"></div>
+<div class="pred-bar-fill" style="width:75%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[29% – 97%]</span> &middot;
+Agreement: <span>80%</span> &middot;
+Action: <span>REDUCE</span> &middot;
+Deadline: <span>2026-04-30</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-economy">economy</span>Will US unemployment exceed 4.8% before September 2026?</div>
+<div class="pred-prob mid">52%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:9%;width:87%"></div>
+<div class="pred-bar-fill" style="width:52%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[9% – 96%]</span> &middot;
+Agreement: <span>90%</span> &middot;
+Action: <span>REDUCE</span> &middot;
+Deadline: <span>2026-09-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-economy">economy</span>Will US CPI exceed 4% annualized in Q2 2026?</div>
+<div class="pred-prob mid">56%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:13%;width:84%"></div>
+<div class="pred-bar-fill" style="width:56%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[13% – 97%]</span> &middot;
+Agreement: <span>88%</span> &middot;
+Action: <span>INCREASE</span> &middot;
+Deadline: <span>2026-07-15</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-economy">economy</span>Will the Fed cut rates at the June 2026 FOMC meeting?</div>
+<div class="pred-prob mid">43%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:3%;width:85%"></div>
+<div class="pred-bar-fill" style="width:43%;background:#ff9800"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[3% – 88%]</span> &middot;
+Agreement: <span>86%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-06-18</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will VIX stay above 20 for the next 30 days?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-04-25</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-economy">economy</span>Will US unemployment exceed 5% before December 2026?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-12-31</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-disaster">disaster</span>Will there be a magnitude 7.0+ earthquake in Pacific Ring of Fire in next 90 days?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-06-25</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-commodity">commodity</span>Will oil exceed $90/barrel before September 2026?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-09-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will SPY hit new all-time high before June 2026?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-06-30</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-market">market</span>Will BTC exceed $100K before October 2026?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-10-01</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-economy">economy</span>Will the Fed cut rates before July 2026?</div>
+<div class="pred-prob high">68%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:10%;width:80%"></div>
+<div class="pred-bar-fill" style="width:68%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[10% – 90%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>HOLD</span> &middot;
+Deadline: <span>2026-07-31</span>
+</div>
+</div>
+<div class="pred">
+<div class="pred-top">
+<div class="pred-q"><span class="domain domain-geopolitical">geopolitical</span>Will there be a new US tariff action affecting >$50B in trade in next 60 days?</div>
+<div class="pred-prob high">93%</div>
+</div>
+<div class="pred-bar">
+<div class="pred-bar-ci" style="left:24%;width:74%"></div>
+<div class="pred-bar-fill" style="width:93%;background:#4caf50"></div>
+</div>
+<div class="pred-meta">
+90% CI: <span>[24% – 98%]</span> &middot;
+Agreement: <span>0%</span> &middot;
+Action: <span>REDUCE_EXPOSURE</span> &middot;
+Deadline: <span>2026-05-25</span>
+</div>
+</div>
+</div></div>
+<div class="panel" id="panel-causal">
+<h2 style="color:#fff;margin-bottom:1rem;font-weight:300;font-size:1.5rem">Discovered Causal Structure <span style="color:var(--dim);font-size:0.9rem">— 86 significant links from 2 years of market data</span></h2>
+<div class="causal-grid">
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → Dollar</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bonds → Dollar</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bonds → Bitcoin</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Gold → Dollar</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Dollar → Bonds</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Dollar → Bitcoin</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">VIX → Copper</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bitcoin → Bonds</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bitcoin → Dollar</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SmallCap → Bonds</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → SmallCap</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">NasdaqETF → Dollar</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Copper → Bitcoin</div>
+<div class="causal-str str-high">1.000</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">NasdaqETF → SmallCap</div>
+<div class="causal-str str-high">0.999</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SmallCap → Dollar</div>
+<div class="causal-str str-high">0.999</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Oil → Gold</div>
+<div class="causal-str str-high">0.999</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SmallCap → Copper</div>
+<div class="causal-str str-high">0.998</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bitcoin → SmallCap</div>
+<div class="causal-str str-high">0.992</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bitcoin → SP500</div>
+<div class="causal-str str-high">0.990</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SmallCap → SP500</div>
+<div class="causal-str str-high">0.988</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → Oil</div>
+<div class="causal-str str-high">0.988</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → Gold</div>
+<div class="causal-str str-high">0.985</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SmallCap → Oil</div>
+<div class="causal-str str-high">0.980</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">VIX → Bonds</div>
+<div class="causal-str str-high">0.977</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Oil → Bonds</div>
+<div class="causal-str str-high">0.971</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Oil → Dollar</div>
+<div class="causal-str str-high">0.961</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Gold → Copper</div>
+<div class="causal-str str-high">0.949</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">NasdaqETF → Copper</div>
+<div class="causal-str str-high">0.936</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Oil → Bitcoin</div>
+<div class="causal-str str-high">0.923</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Oil → Copper</div>
+<div class="causal-str str-high">0.920</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">VIX → Dollar</div>
+<div class="causal-str str-high">0.913</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → Copper</div>
+<div class="causal-str str-high">0.900</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">VIX → Bitcoin</div>
+<div class="causal-str str-high">0.842</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Gold → Bonds</div>
+<div class="causal-str str-high">0.837</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Dollar → Gold</div>
+<div class="causal-str str-high">0.832</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">SP500 → Bonds</div>
+<div class="causal-str str-high">0.804</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">NasdaqETF → Bonds</div>
+<div class="causal-str str-med">0.772</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">VIX → Oil</div>
+<div class="causal-str str-med">0.770</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Bonds → SmallCap</div>
+<div class="causal-str str-med">0.768</div>
+</div>
+<div class="causal-edge">
+<div class="causal-arrow">Dollar → Oil</div>
+<div class="causal-str str-med">0.765</div>
+</div>
+</div></div>
+<div class="panel" id="panel-architecture">
+<div class="arch">
+<span class="hl2">ANY QUESTION</span> + <span class="hl2">DEADLINE</span>
+        │
+        ▼
+┌───────────────────────────────────────┐
+│  <span class="hl">50+ DATA CONNECTORS</span>                  │
+│  FRED · Treasury · BLS · EPA · NASA   │
+│  NOAA · USGS · CDC · FEMA · IMF       │
+│  OECD · World Bank · Wikipedia · FDIC  │
+│  USPTO · CFPB · SEC · yfinance        │
+└───────────────┬───────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────┐
+│  <span class="hl">CAUSAL DISCOVERY</span>                     │
+│  Granger Causality + Transfer Entropy  │
+│  86 significant causal links           │
+│  Auto-learns: Oil→Gold, VIX→Copper    │
+└───────────────┬───────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────┐
+│  <span class="hl">12 ENGINES IN PARALLEL</span>               │
+│                                        │
+│  ⚛️  Quantum Circuit (trainable, 84%)  │
+│  🧮 Tensor Network Fusion (TT-decomp) │
+│  🌲 XGBoost + 💡 LightGBM + 🐱 CatBoost│
+│  📈 Hurst Regime Detection             │
+│  📰 News NLP (sentence-transformers)   │
+│  🧠 Active Inference (FEP)             │
+│  🔗 Causal Engine (do-calculus)        │
+│  📏 Conformal Prediction               │
+└───────────────┬───────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────┐
+│  <span class="hl2">SWARM CONSENSUS</span>                      │
+│  Weighted agreement across all engines │
+│  Agreement score = confidence measure  │
+└───────────────┬───────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────┐
+│  <span class="hl2">ADAPTIVE CONFORMAL CALIBRATION</span>       │
+│  Self-tightening intervals             │
+│  Intervals shrink as predictions       │
+│  resolve — guaranteed coverage         │
+└───────────────┬───────────────────────┘
+                │
+                ▼
+   <span class="hl">PREDICTION</span> + <span class="hl">CONFIDENCE INTERVAL</span> + <span class="hl2">ACTION</span>
+</div>
+</div>
+<div class="panel" id="panel-connectors">
+<h2 style="color:#fff;margin-bottom:1rem;font-weight:300;font-size:1.5rem">50+ Real-time Data Connectors <span style="color:var(--dim);font-size:0.9rem">— all free, no API keys required</span></h2>
+<div class="conn-grid">
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">FRED</span><div class="conn-desc">Federal Reserve Economic Data</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Treasury</span><div class="conn-desc">US debt, yields, exchange rates</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">BLS</span><div class="conn-desc">Employment, CPI, wages</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">yfinance</span><div class="conn-desc">Real-time market data (15 instruments)</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">NASA EONET</span><div class="conn-desc">Natural disaster events</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">NASA FIRMS</span><div class="conn-desc">Active fire detection</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">NOAA</span><div class="conn-desc">Weather alerts, climate data</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">USGS</span><div class="conn-desc">Earthquake monitoring</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">GDELT</span><div class="conn-desc">Global event database</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Federal Register</span><div class="conn-desc">Regulatory activity</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Wikipedia</span><div class="conn-desc">Pageview attention signals</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">FDIC</span><div class="conn-desc">Bank health, failure data</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">CFPB</span><div class="conn-desc">Consumer complaints</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">USPTO</span><div class="conn-desc">Patent filings</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">IMF</span><div class="conn-desc">Global economic data</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">OECD</span><div class="conn-desc">Leading indicators, 38 countries</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">World Bank</span><div class="conn-desc">Development indicators</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">SEC EDGAR</span><div class="conn-desc">Corporate filings</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Census</span><div class="conn-desc">Population, economic data</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Congress</span><div class="conn-desc">Legislative activity</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">CFTC</span><div class="conn-desc">Futures positioning</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">USAspending</span><div class="conn-desc">Federal spending</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">EPA</span><div class="conn-desc">Environmental data</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">CDC</span><div class="conn-desc">Health surveillance</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">FEMA</span><div class="conn-desc">Disaster declarations</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">WHO</span><div class="conn-desc">Disease outbreaks</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">ACLED</span><div class="conn-desc">Conflict events</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Google Trends</span><div class="conn-desc">Search interest</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">OpenAQ</span><div class="conn-desc">Air quality</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Ship Tracking</span><div class="conn-desc">Maritime AIS data</div></div>
+<div class="conn"><span class="conn-status live"></span><span class="conn-name">Energy (EIA)</span><div class="conn-desc">Oil, gas, power grid</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">ERCOT</span><div class="conn-desc">Texas grid prices</div></div>
+<div class="conn"><span class="conn-status stub"></span><span class="conn-name">CAISO</span><div class="conn-desc">California grid prices</div></div>
+</div></div>
+</div>
+
+<div class="footer">
+ARMIS v2.0 · Masterful Capital · MC Technologies<br>
+12 Fused Engines · 50+ Data Connectors · 5 Prediction Domains<br>
+Quantum Probability · Causal Discovery · Conformal Prediction · Tensor Networks · Active Inference
+</div>
+
+<script>
+function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-'+name).classList.add('active');
+    event.target.classList.add('active');
+}
+// Animate bars on load
+window.addEventListener('load', () => {
+    document.querySelectorAll('.pred-bar-fill').forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => bar.style.width = w, 100);
+    });
+});
+</script>
+</body>
+</html>
